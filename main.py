@@ -59,6 +59,7 @@ if __name__ == "__main__":
     variants = get_variant_data(patients)
 
     max_stay = max([patient.estimated_stay for patient in patients]) + 1
+    study_days = sum([patient.num_observations for patient in patients])
     fig, ax = plt.subplots()
 
     bottom = np.array([0] * max_stay)
@@ -83,6 +84,7 @@ if __name__ == "__main__":
     print(
         f"Total patient-days: {get_stay_data(patients, max_stay+1).total_patient_stays}"
     )
+    print(f"Study-days: {study_days}")
     print(f"Median stay: {get_stay_data(patients, max_stay+1).median_stay}")
     # print(f"No PCR: {len(no_pcr)}\n")
 
