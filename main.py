@@ -27,7 +27,7 @@ def get_patients(observations: List[Observation]):
                 mrn=observation.mrn, swabs=observation.swabs, date=observation.date
             )
             patients[observation.mrn] = patient
-    return patients.values()
+    return list(patients.values())
 
 
 def get_stay_data(patients: List[Patient], hist_range: int, variant: str = None):
@@ -62,17 +62,24 @@ if __name__ == "__main__":
     study_days = sum([patient.num_observations for patient in patients])
     fig, ax = plt.subplots()
 
-    bottom = np.array([0] * max_stay)
-    for variant in set([patient.variant for patient in patients]):
-        stay_data = get_stay_data(patients, max_stay, variant)
-        ax.bar(
-            stay_data.hist["stays"],
-            stay_data.hist["count"],
-            label=stay_data.variant,
-            bottom=bottom,
-        )
-        bottom = bottom + stay_data.hist["count"]
+    # Patients by variant
+    # bottom = np.array([0] * max_stay)
+    # for variant in set([patient.variant for patient in patients]):
+    #     stay_data = get_stay_data(patients, max_stay, variant)
+    #     ax.bar(
+    #         stay_data.hist["stays"],
+    #         stay_data.hist["count"],
+    #         label=stay_data.variant,
+    #         bottom=bottom,
+    #     )
+    #     bottom = bottom + stay_data.hist["count"]
 
+    # All patients
+    stay_data = get_stay_data(patients, max_stay+1)
+    ax.bar(
+        stay_data.hist["stays"],
+        stay_data.hist["count"]
+    )
     ax.set_xlabel("Stay length")
     ax.set_ylabel("Number of patients")
     ax.legend()
