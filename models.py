@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List
 import numpy as np
+from collections import Counter
 
 
 class Observation:
@@ -33,6 +34,10 @@ class Patient:
         self.mrn = mrn
         self.swabs = swabs
         self.dates = []
+        self._num_observations = None
+        self._num_swabs = None
+        self._variant = None
+        self._estimated_stay = None
         self.add_date(date)
 
     def add_date(self, date: datetime):
@@ -40,17 +45,36 @@ class Patient:
 
     @property
     def num_observations(self):
-        return len(self.dates)
+        if self._num_observations is None:
+            self._num_observations = len(self.dates)
+        return self._num_observations
 
     @property
     def num_swabs(self):
-        return len(self.swabs)
+        if self._num_swabs is None:
+            self._num_swabs = len(self.swabs)
+        return self._num_swabs
 
     @property
     def variant(self):
-        if self.num_swabs > 0:
-            return self.swabs[0]["variant"]
-        return "no_pcr"
+        if self._variant is None:
+            if self.num_swabs > 0:
+                swab_variants = Counter([swab["variant"] for swab in self.swabs])
+                mode_variants = [variant[0] for variant in swab_variants.most_common()]
+                if len(mode_variants) == 1:
+                    self._variant = mode_variants[0]
+                elif "delta" in mode_variants:
+                    self._variant = "delta"
+                elif "omicron" in mode_variants:
+                    self._variant = "omicron"
+                else:
+                    self._variant = mode_variants[0]
+
+                if self._variant == "novariant":
+                    self._variant = "indeterminate"
+            else:
+                self._variant = "no_pcr"
+        return self._variant
 
     @property
     def time_to_neg(self):
@@ -63,24 +87,27 @@ class Patient:
 
     @property
     def estimated_stay(self):
-        if self.num_swabs > 0:
-            first_swab_date = self.swabs[0]["date"]
-            first_observation_date = self.dates[0]
-            last_swab_date = self.swabs[-1]["date"]
-            last_observation_date = self.dates[-1]
-            start_date = (
-                first_swab_date
-                if first_swab_date < first_observation_date
-                else first_observation_date
-            )
-            end_date = (
-                last_observation_date
-                if last_observation_date > last_swab_date
-                else last_swab_date
-            )
+        if self._estimated_stay is None:
+            if self.num_swabs > 0:
+                first_swab_date = self.swabs[0]["date"]
+                first_observation_date = self.dates[0]
+                last_swab_date = self.swabs[-1]["date"]
+                last_observation_date = self.dates[-1]
+                start_date = (
+                    first_swab_date
+                    if first_swab_date < first_observation_date
+                    else first_observation_date
+                )
+                end_date = (
+                    last_observation_date
+                    if last_observation_date > last_swab_date
+                    else last_swab_date
+                )
 
-            return (end_date - start_date).days
-        return 0
+                self._estimated_stay = (end_date - start_date).days
+            else:
+                self._estimated_stay = 0
+        return self._estimated_stay
 
 
 class StayData:
