@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List
 import numpy as np
+from collections import Counter
 
 
 class Observation:
@@ -58,7 +59,19 @@ class Patient:
     def variant(self):
         if self._variant is None:
             if self.num_swabs > 0:
-                self._variant = self.swabs[0]["variant"]
+                swab_variants = Counter([swab["variant"] for swab in self.swabs])
+                mode_variants = [variant[0] for variant in swab_variants.most_common()]
+                if len(mode_variants) == 1:
+                    self._variant = mode_variants[0]
+                elif "delta" in mode_variants:
+                    self._variant = "delta"
+                elif "omicron" in mode_variants:
+                    self._variant = "omicron"
+                else:
+                    self._variant = mode_variants[0]
+
+                if self._variant == "novariant":
+                    self._variant = "indeterminate"
             else:
                 self._variant = "no_pcr"
         return self._variant
